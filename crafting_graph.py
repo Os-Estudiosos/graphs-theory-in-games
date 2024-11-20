@@ -1,3 +1,4 @@
+import os
 import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.patches import Rectangle
@@ -60,6 +61,6 @@ nx.draw_networkx_labels(
 )
 
 # Salvando o grafo como imagem
-plt.savefig("grafo_crafting.png", bbox_inches='tight', dpi=300)
+plt.savefig(os.path.join(os.getcwd(), 'output', "grafo_crafting.png"), bbox_inches='tight', dpi=300)
 
 plt.show()
