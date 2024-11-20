@@ -1,6 +1,5 @@
 import networkx as nx
 import pygame
-import matplotlib.pyplot as plt
 
 # Esse código define um jogo num mapa 2D com 500x500 pixels de largura
 
@@ -58,8 +57,10 @@ class Player:
     """Classe genérica responsável pelo player"""
     def __init__(self):
         self.rect = pygame.Rect(0,0,30,30)
+        self.active_node = [0,0]  # O node onde o player se encontra
     
     def update(self):
+        # Movimentação do player
         keys = pygame.key.get_pressed()
 
         vector = pygame.math.Vector2(
@@ -72,15 +73,33 @@ class Player:
         
         self.rect.x += 5*vector.x
         self.rect.y += 5*vector.y
+
+        # Atualizando o nó atual
+        self.active_node[0] = self.rect.y // tile_size[1]  # Atualizo o nó de linha
+        self.active_node[1] = self.rect.x // tile_size[0]  # Atualizo o nó de coluna
+
+        print(self.active_node)
     
     def draw(self, screen):
         pygame.draw.rect(screen, (0,0,255), self.rect)
 
 
-
+class Enemy:
+    """Classe genérica responsável por um objeto que segue o player"""
+    def __init__(self):
+        self.rect = pygame.Rect(0,0,30,30)
+        self.direction = pygame.math.Vector2()
+    
+    def update(self, player_pos):
+        # Achando o tile onde o player se localiza
+        player_pos
+    
+    def draw(self, screen):
+        pygame.draw.rect(screen, (255,0,0), self.rect)
 
 
 player = Player()
+enemy = Enemy()
 
 
 def main():
@@ -102,8 +121,10 @@ def main():
             pygame.draw.line(display, (0,0,0), (0, tile_size[1]*(i+1)), (map_size[1], tile_size[1]*(i+1)))
 
         player.update()
+        enemy.update(player.rect.center)
 
         player.draw(display)
+        enemy.draw(display)
 
         pygame.display.flip()
 
