@@ -52,21 +52,39 @@ class Player:
     def __init__(self):
         self.rect = pygame.Rect(0,0,30,30)
         self.active_node = (0,0)  # O node onde o player se encontra
+        self.direction = pygame.math.Vector2(0,0)
     
-    def update(self):
+    def update(self, walls_list):
         # Movimentação do player
         keys = pygame.key.get_pressed()
 
-        vector = pygame.math.Vector2(
+        self.direction = pygame.math.Vector2(
             keys[pygame.K_d] - keys[pygame.K_a],
             keys[pygame.K_s] - keys[pygame.K_w]
         )
 
-        if vector.length() != 0:
-            vector.normalize()
+        if self.direction.length() != 0:
+            self.direction.normalize()
         
-        self.rect.x += 5*vector.x
-        self.rect.y += 5*vector.y
+        self.rect.x += 5*self.direction.x
+
+        for wall in walls_list:
+            print(wall)
+            if self.rect.colliderect(wall.rect):
+                print("aqui")
+                if self.direction.x > 0:
+                    self.rect.right = wall.rect.left
+                else:
+                    self.rect.left = wall.rect.right
+
+        self.rect.y += 5*self.direction.y
+
+        for wall in walls_list:
+            if self.rect.colliderect(wall.rect):
+                if self.direction.y > 0:
+                    self.rect.bottom = wall.rect.top
+                else:
+                    self.rect.top = wall.rect.bottom
 
         # Atualizando o nó atual do player
         self.active_node = (
@@ -87,7 +105,7 @@ class Enemy:
         self.direction = pygame.math.Vector2()
         self.actual_node = (0,0)
         self.least_way = []
-    
+
     def update(self, player_node: list[int]):
         # Pego uma lista em ordem dos nós que o inimigo deve seguir para ir ao player
         self.least_way = nx.dijkstra_path(grafo_associado, self.actual_node, player_node)
@@ -105,6 +123,7 @@ class Enemy:
             direction.normalize()
 
         self.rect.x += direction.x
+
         self.rect.y += direction.y
 
         # # Atualizando o nó atual do inimigo
@@ -129,6 +148,19 @@ class Enemy:
         pygame.draw.rect(screen, (255,0,0), self.rect)
 
 
+class Wall:
+    def __init__(self, pos = (400, 400)):
+        self.rect = pygame.Rect(0,0,30,30)
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
+    
+    def draw(self, screen):
+        pygame.draw.rect(screen, (0,255,0), self.rect)
+
+
+walls_list = [
+    Wall()
+]
 player = Player()
 enemy = Enemy()
 
@@ -151,10 +183,12 @@ def main():
             pygame.draw.line(display, (0,0,0), (tile_size[0]*(i+1), 0), (tile_size[0]*(i+1), map_size[0]))
             pygame.draw.line(display, (0,0,0), (0, tile_size[1]*(i+1)), (map_size[1], tile_size[1]*(i+1)))
 
-        player.update()
+        player.update(walls_list)
         enemy.update(player.active_node)
 
         player.draw(display)
+        for wall in walls_list:
+            wall.draw(display)
         enemy.draw(display)
 
         pygame.display.flip()
