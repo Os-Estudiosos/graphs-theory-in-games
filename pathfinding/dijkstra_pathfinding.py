@@ -50,71 +50,67 @@ for i in range(m):
 class Player:
     """Classe genérica responsável pelo player"""
     def __init__(self):
-        self.rect = pygame.Rect(0,0,30,30)
+        self.rect = pygame.Rect(0,0,30,30)  # Retângulo que representa o player
         self.active_node = (0,0)  # O node onde o player se encontra
-        self.direction = pygame.math.Vector2(0,0)
+        self.direction = pygame.math.Vector2(0,0)  # Direção onde ele está indo
     
     def update(self, walls_list):
         # Movimentação do player
         keys = pygame.key.get_pressed()
 
-        self.direction = pygame.math.Vector2(
+        self.direction = pygame.math.Vector2(  # Atualizando o vetor da direção
             keys[pygame.K_d] - keys[pygame.K_a],
             keys[pygame.K_s] - keys[pygame.K_w]
         )
 
-        if self.direction.length() != 0:
+        if self.direction.length() != 0:  # Normalizando
             self.direction.normalize()
         
-        self.rect.x += 5*self.direction.x
+        self.rect.x += 5*self.direction.x  # Atualizando o X
 
-        for wall in walls_list:
+        for wall in walls_list:  # Fazendo a colisão lateral
             if self.rect.colliderect(wall.rect):
                 if self.direction.x > 0:
                     self.rect.right = wall.rect.left
                 else:
                     self.rect.left = wall.rect.right
 
-        self.rect.y += 5*self.direction.y
+        self.rect.y += 5*self.direction.y  # Atualizando o Y
 
-        for wall in walls_list:
+        for wall in walls_list:  # Fazendo a colisão vertical
             if self.rect.colliderect(wall.rect):
                 if self.direction.y > 0:
                     self.rect.bottom = wall.rect.top
                 else:
                     self.rect.top = wall.rect.bottom
-
-        # Atualizando o nó atual do player
+        
         self.active_node = (
             self.rect.centery // tile_size[1],  # Atualizo o nó de linha
             self.rect.centerx // tile_size[0]  # Atualizo o nó de coluna
         )
-
-        print(self.active_node)
     
     def draw(self, screen):
+        """Desenhando o player na tela"""
         pygame.draw.rect(screen, (0,0,255), self.rect)
 
 
 class Enemy:
     """Classe genérica responsável por um objeto que segue o player"""
     def __init__(self):
-        self.rect = pygame.Rect(0,0,30,30)
-        self.actual_node = (0,0)
-        self.least_way = []
+        self.rect = pygame.Rect(0,0,30,30)  # Retângulo do Inimigo
+        self.actual_node = [0,0]  # Vértice onde o player se encontra
+        self.least_way = []  # O menor caminho até o player
 
     def update(self, player_node: list[int]):
         # Pego uma lista em ordem dos nós que o inimigo deve seguir para ir ao player
-        self.least_way = nx.dijkstra_path(grafo_associado, self.actual_node, player_node)
+        self.least_way = nx.dijkstra_path(grafo_associado, tuple(self.actual_node), player_node)
 
         # Faço ele seguir em direção ao nó mais próximo
         direction = pygame.math.Vector2(0,0)
 
-        print(self.least_way)
-
         if len(self.least_way) > 1:
-            direction.x = self.least_way[1][1] - self.least_way[0][1]
-            direction.y = self.least_way[1][0] - self.least_way[0][0]
+            direction.x = self.least_way[1][1] - self.actual_node[1]
+            direction.y = self.least_way[1][0] - self.actual_node[0]
         
         if direction.length() != 0:
             direction.normalize()
@@ -137,12 +133,17 @@ class Enemy:
                 else:
                     self.rect.top = wall.rect.bottom
 
-        # # Atualizando o nó atual do inimigo
-        self.actual_node = (
-            self.rect.y // tile_size[1],  # Atualizo o nó de linha
-            self.rect.x // tile_size[0]  # Atualizo o nó de coluna
-        )
-
+        # Atualizando o nó atual do inimigo
+        if direction.x > 0:
+            self.actual_node[1] = self.rect.left // tile_size[0]  # Atualizo o nó de coluna        
+        else:
+            self.actual_node[1] = self.rect.right // tile_size[0]  # Atualizo o nó de coluna
+        
+        if direction.y > 0:
+            self.actual_node[0] = self.rect.top // tile_size[1]  # Atualizo o nó de linha
+        else:
+            self.actual_node[0] = self.rect.bottom // tile_size[1]  # Atualizo o nó de linha
+            
     
     def draw(self, screen):
         for i in range(len(self.least_way)-1):
@@ -160,18 +161,38 @@ class Enemy:
 
 
 class Wall:
-    def __init__(self, pos = (400, 400)):
-        self.rect = pygame.Rect(0,0,30,30)
-        self.rect.x = pos[0]
-        self.rect.y = pos[1]
+    def __init__(self, pos_node = (0, 0)):
+        self.rect = pygame.Rect(0,0,tile_size[0],tile_size[1])
+        self.rect.x = pos_node[0]*tile_size[1]
+        self.rect.y = pos_node[1]*tile_size[0]
     
     def draw(self, screen):
-        pygame.draw.rect(screen, (0,255,0), self.rect)
+        pygame.draw.rect(screen, (40,40,40), self.rect)
 
 
-walls_list = [
-    Wall()
+walls_list = [  # Lista com todas as instâncias de Wall
 ]
+
+# Lista que descreve onde as paredes ficam
+wall_map = [
+    [0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+    [0, 1, 0, 1, 0, 0, 0, 1, 0, 1],
+    [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+    [0, 1, 0, 1, 0, 0, 0, 1, 0, 1],
+    [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+    [0, 1, 0, 1, 0, 0, 0, 1, 0, 1],
+    [0, 1, 0, 1, 0, 1, 0, 0, 0, 1],
+    [0, 1, 0, 1, 0, 0, 0, 0, 0, 1],
+    [0, 1, 0, 0, 0, 1, 0, 1, 0, 1],
+    [0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+]
+
+for i in range(linhas_grafo):  # Adicionando paredes e tiles
+    for j in range(colunas_grafo):
+        if wall_map[i][j]:
+            walls_list.append(Wall((j, i)))
+            grafo_associado.remove_node((i, j))
+        
 player = Player()
 enemy = Enemy()
 
