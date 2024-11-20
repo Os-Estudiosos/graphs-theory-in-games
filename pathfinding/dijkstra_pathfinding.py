@@ -69,9 +69,7 @@ class Player:
         self.rect.x += 5*self.direction.x
 
         for wall in walls_list:
-            print(wall)
             if self.rect.colliderect(wall.rect):
-                print("aqui")
                 if self.direction.x > 0:
                     self.rect.right = wall.rect.left
                 else:
@@ -102,7 +100,6 @@ class Enemy:
     """Classe genérica responsável por um objeto que segue o player"""
     def __init__(self):
         self.rect = pygame.Rect(0,0,30,30)
-        self.direction = pygame.math.Vector2()
         self.actual_node = (0,0)
         self.least_way = []
 
@@ -122,9 +119,23 @@ class Enemy:
         if direction.length() != 0:
             direction.normalize()
 
-        self.rect.x += direction.x
+        self.rect.x += direction.x*2
 
-        self.rect.y += direction.y
+        for wall in walls_list:
+            if self.rect.colliderect(wall.rect):
+                if direction.x > 0:
+                    self.rect.right = wall.rect.left
+                else:
+                    self.rect.left = wall.rect.right
+
+        self.rect.y += 2*direction.y
+
+        for wall in walls_list:
+            if self.rect.colliderect(wall.rect):
+                if direction.y > 0:
+                    self.rect.bottom = wall.rect.top
+                else:
+                    self.rect.top = wall.rect.bottom
 
         # # Atualizando o nó atual do inimigo
         self.actual_node = (
