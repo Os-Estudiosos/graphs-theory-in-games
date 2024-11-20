@@ -43,21 +43,15 @@ for i in range(m):
         # Adicionando as arestas para os vizinhos válidos
         for vi, vj in vizinhos:
             if 0 <= vi < n and 0 <= vj < n:  # Verifica se está dentro da matriz
-                grafo_associado.add_edge((i, j), (vi, vj))
-
-# # Desenhar o grafo
-# nx.draw(grafo_associado, with_labels=True, node_color='lightblue', node_size=700, font_size=10)
-
-# # Mostrar o grafo
-# plt.title("Grafo com Nós Alinhados em Forma de Matriz")
-# plt.show()
+                d = ((i - vi)**2 + (j - vj)**2)**(1/2) # Distância como peso
+                grafo_associado.add_edge((i, j), (vi, vj), weight=d)
 
 
 class Player:
     """Classe genérica responsável pelo player"""
     def __init__(self):
         self.rect = pygame.Rect(0,0,30,30)
-        self.active_node = [0,0]  # O node onde o player se encontra
+        self.active_node = (0,0)  # O node onde o player se encontra
     
     def update(self):
         # Movimentação do player
@@ -74,9 +68,11 @@ class Player:
         self.rect.x += 5*vector.x
         self.rect.y += 5*vector.y
 
-        # Atualizando o nó atual
-        self.active_node[0] = self.rect.y // tile_size[1]  # Atualizo o nó de linha
-        self.active_node[1] = self.rect.x // tile_size[0]  # Atualizo o nó de coluna
+        # Atualizando o nó atual do player
+        self.active_node = (
+            self.rect.centery // tile_size[1],  # Atualizo o nó de linha
+            self.rect.centerx // tile_size[0]  # Atualizo o nó de coluna
+        )
 
         print(self.active_node)
     
@@ -89,12 +85,47 @@ class Enemy:
     def __init__(self):
         self.rect = pygame.Rect(0,0,30,30)
         self.direction = pygame.math.Vector2()
+        self.actual_node = (0,0)
+        self.least_way = []
     
-    def update(self, player_pos):
-        # Achando o tile onde o player se localiza
-        player_pos
+    def update(self, player_node: list[int]):
+        # Pego uma lista em ordem dos nós que o inimigo deve seguir para ir ao player
+        self.least_way = nx.dijkstra_path(grafo_associado, self.actual_node, player_node)
+
+        # Faço ele seguir em direção ao nó mais próximo
+        direction = pygame.math.Vector2(0,0)
+
+        print(self.least_way)
+
+        if len(self.least_way) > 1:
+            direction.x = self.least_way[1][1] - self.least_way[0][1]
+            direction.y = self.least_way[1][0] - self.least_way[0][0]
+        
+        if direction.length() != 0:
+            direction.normalize()
+
+        self.rect.x += direction.x
+        self.rect.y += direction.y
+
+        # # Atualizando o nó atual do inimigo
+        self.actual_node = (
+            self.rect.y // tile_size[1],  # Atualizo o nó de linha
+            self.rect.x // tile_size[0]  # Atualizo o nó de coluna
+        )
+
     
     def draw(self, screen):
+        for i in range(len(self.least_way)-1):
+            pygame.draw.line(screen, (0,0,0),
+                (
+                    self.least_way[i][1]*tile_size[0] + (tile_size[0]//2),
+                    self.least_way[i][0]*tile_size[1] + (tile_size[1]//2)
+                ),
+                (
+                    self.least_way[i+1][1]*tile_size[0] + (tile_size[0]//2),
+                    self.least_way[i+1][0]*tile_size[1] + (tile_size[1]//2)
+                )
+            )
         pygame.draw.rect(screen, (255,0,0), self.rect)
 
 
@@ -121,7 +152,7 @@ def main():
             pygame.draw.line(display, (0,0,0), (0, tile_size[1]*(i+1)), (map_size[1], tile_size[1]*(i+1)))
 
         player.update()
-        enemy.update(player.rect.center)
+        enemy.update(player.active_node)
 
         player.draw(display)
         enemy.draw(display)
